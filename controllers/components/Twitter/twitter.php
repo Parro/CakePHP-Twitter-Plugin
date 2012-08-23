@@ -13,7 +13,15 @@
 	 * @license MIT License - http://www.opensource.org/licenses/mit-license.php
 	 */
 	 App::import('Vendor', 'Twitter.HttpSocketOauth');
-	 	 
+	 
+	 
+	 //Import official Twitter class from https://github.com/mzsanford/twitter-text-php
+	 App::import('Vendor', 'Twitter.twitter-text-php/Regex');
+	 
+	 App::import('Vendor', 'Twitter.twitter-text-php/AutoLink');
+
+	 include('plugins'.DS.'twitter'.DS.'vendors'.DS.'twitter-text-php'.DS.'Autolink.php');
+	 
 	 class TwitterComponent extends Object {
 	 	var $name = 'Twitter';
 		var $components = array('Cookie' ,'Session');
@@ -313,17 +321,41 @@
 			if(is_array($body)) {
 				$body = array_change_key_case($body);
 				//Check if status isset
+			
 				if(array_key_exists('status', $body)) {
-					if(strlen($body['status']) > 140) $body['status'] = substr($body['status'], 0, 137).'...';
+					$body['status']=$this->checkStatusLength($body['status']);
 				}
 				else if(array_key_exists('text', $body)) {
-					if(strlen($body['text']) > 140) $body['text'] = substr($body['text'], 0, 137).'...';
+					$body['text']=$this->checkStatusLength($body['text']);
 				}
 				//Set the request body
 				$request['body'] = $body;
 			}
+
 			//Return
 			return $this->Oauth->request($request);
+		}
+		
+		/*
+		 * Check status length and eventually truncate string, counting every link as a 20 characters long string (as it will be wrapped by t.co)
+		 * see https://dev.twitter.com/docs/tco-link-wrapper/faq#Will_t.co-wrapped_links_always_be_the_same_length
+		 * 
+		 * @access public
+		 * @return string
+		 * @param string $status The text wich should be posted as new status
+		 */
+		public function checkStatusLength($status){
+			//Use Twitter_Autolink to convert the link in a html tags
+			$statusWithLink=Twitter_Autolink::create($status)->addLinksToURLs();
+			
+			//Replace the html tag with 20 underscore
+			$statusWithLinkPlaceholder=preg_replace('/<a[^>]*?>.*?<\/a>/is', str_pad('',20,'_'), $statusWithLink);
+			
+			if(strlen($statusWithLinkPlaceholder) > 140){
+				$status = substr($status, 0, 137).'...';
+			}
+			
+			return $status;
 		}
 		
 		#Account Methods
