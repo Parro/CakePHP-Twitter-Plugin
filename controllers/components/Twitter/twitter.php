@@ -34,7 +34,7 @@
 		 * @access private
 		 * @var private $Oauth The HttpSocketOauth class var
 		 */
-		private $Oauth;
+		public $Oauth;
 		
 		/*
 		 * Setup the counsumer key and consumer secret for the app. 
@@ -129,6 +129,7 @@
 		  	);
 			//Get the response 
 		  	$response = $this->Oauth->request($request);
+
 		  	parse_str($response, $response);
 			//Setup a new Twitter user
 			$this->loginTwitterUser($response['oauth_token'], $response['oauth_token_secret']);
